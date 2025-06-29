@@ -12,7 +12,9 @@ import ComponentPalette from './ComponentPalette';
 import { Droppable } from '../Droppable';
 import { Draggable } from '../Draggable';
 import styles from './PageBuilder.module.css';
+import type { HeroData, TwoColumnData, ImageGridData } from '../../types/contentful';
 
+type ComponentData = HeroData | TwoColumnData | ImageGridData;
 interface PageBuilderProps {
   initialComponents?: LayoutComponent[];
 }
@@ -55,7 +57,6 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialComponents = [] }) => 
       
       dispatch(addComponent(newComponent));
     }
-    // Check if reordering within canvas
     else if (components.find(c => c.id === activeId) && components.find(c => c.id === overId)) {
       const activeIndex = components.findIndex(c => c.id === activeId);
       const overIndex = components.findIndex(c => c.id === overId);
@@ -69,79 +70,80 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialComponents = [] }) => 
     }
   };
 
-  const getDefaultComponentData = (type: 'hero' | 'twoColumn' | 'imageGrid') => {
-    switch (type) {
-      case 'hero':
-        return {
-          heading: 'Hero Heading',
-          subtitle: 'Hero subtitle text goes here',
-          ctaText: 'Get Started',
-          ctaUrl: '#',
-          backgroundImage: {
-            sys: { id: 'placeholder' },
-            title: 'Placeholder Image',
-            url: 'https://images.pexels.com/photos/1591056/pexels-photo-1591056.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            width: 1200,
-            height: 600,
+ const getDefaultComponentData = (type: 'hero' | 'twoColumn' | 'imageGrid'): ComponentData => {
+  switch (type) {
+    case 'hero':
+      return {
+        heading: 'Hero Heading',
+        subtitle: 'Hero subtitle text goes here',
+        ctaText: 'Get Started',
+        ctaUrl: '#',
+        backgroundImage: {
+          sys: { id: 'placeholder' },
+          title: 'Placeholder Image',
+          url: 'https://images.pexels.com/photos/1591056/pexels-photo-1591056.jpeg?auto=compress&cs=tinysrgb&w=1200',
+          width: 1200,
+          height: 600,
+          contentType: 'image/jpeg',
+        },
+      };
+    case 'twoColumn':
+      return {
+        leftHeading: 'Two Column Heading',
+        leftSubtitle: 'Description text for the left column',
+        leftCtaText: 'Learn More',
+        leftCtaUrl: '#',
+        rightImage: {
+          sys: { id: 'placeholder' },
+          title: 'Placeholder Image',
+          url: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=800',
+          width: 800,
+          height: 600,
+          contentType: 'image/jpeg',
+        },
+      };
+    case 'imageGrid':
+      return {
+        images: [
+          {
+            sys: { id: 'placeholder-1' },
+            title: 'Grid Image 1',
+            url: 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=400',
+            width: 400,
+            height: 400,
             contentType: 'image/jpeg',
           },
-        };
-      case 'twoColumn':
-        return {
-          leftHeading: 'Two Column Heading',
-          leftSubtitle: 'Description text for the left column',
-          leftCtaText: 'Learn More',
-          leftCtaUrl: '#',
-          rightImage: {
-            sys: { id: 'placeholder' },
-            title: 'Placeholder Image',
-            url: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=800',
-            width: 800,
-            height: 600,
+          {
+            sys: { id: 'placeholder-2' },
+            title: 'Grid Image 2',
+            url: 'https://images.pexels.com/photos/3184317/pexels-photo-3184317.jpeg?auto=compress&cs=tinysrgb&w=400',
+            width: 400,
+            height: 400,
             contentType: 'image/jpeg',
           },
-        };
-      case 'imageGrid':
-        return {
-          images: [
-            {
-              sys: { id: 'placeholder-1' },
-              title: 'Grid Image 1',
-              url: 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=400',
-              width: 400,
-              height: 400,
-              contentType: 'image/jpeg',
-            },
-            {
-              sys: { id: 'placeholder-2' },
-              title: 'Grid Image 2',
-              url: 'https://images.pexels.com/photos/3184317/pexels-photo-3184317.jpeg?auto=compress&cs=tinysrgb&w=400',
-              width: 400,
-              height: 400,
-              contentType: 'image/jpeg',
-            },
-            {
-              sys: { id: 'placeholder-3' },
-              title: 'Grid Image 3',
-              url: 'https://images.pexels.com/photos/3184321/pexels-photo-3184321.jpeg?auto=compress&cs=tinysrgb&w=400',
-              width: 400,
-              height: 400,
-              contentType: 'image/jpeg',
-            },
-            {
-              sys: { id: 'placeholder-4' },
-              title: 'Grid Image 4',
-              url: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400',
-              width: 400,
-              height: 400,
-              contentType: 'image/jpeg',
-            },
-          ],
-        };
-      default:
-        return {};
-    }
-  };
+          {
+            sys: { id: 'placeholder-3' },
+            title: 'Grid Image 3',
+            url: 'https://images.pexels.com/photos/3184321/pexels-photo-3184321.jpeg?auto=compress&cs=tinysrgb&w=400',
+            width: 400,
+            height: 400,
+            contentType: 'image/jpeg',
+          },
+          {
+            sys: { id: 'placeholder-4' },
+            title: 'Grid Image 4',
+            url: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400',
+            width: 400,
+            height: 400,
+            contentType: 'image/jpeg',
+          },
+        ],
+      };
+    default:
+      // this line prevents returning `{}` which is invalid
+      throw new Error(`Unsupported component type: ${type}`);
+  }
+};
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;

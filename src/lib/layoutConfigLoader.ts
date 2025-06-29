@@ -10,73 +10,73 @@ export interface LayoutConfig {
     lastModifiedBy: string;
   };
 }
+interface LandingPageData {
+  landingPageCollection: {
+    items: {
+      layoutConfig: string | null;
+    }[];
+  };
+}
 
-// 🔄 MAIN LOADING FUNCTION - This is where the magic happens!
+
 export async function loadLayoutConfig(slug: string): Promise<LayoutConfig | null> {
-  console.log(`🔍 Loading layout config for slug: ${slug}`);
+  console.log(`Loading layout config for slug: ${slug}`);
   
   try {
-    // Method 1: Try to load from Contentful (Production)
     if (process.env.CONTENTFUL_SPACE_ID && process.env.CONTENTFUL_ACCESS_TOKEN) {
-      console.log('📡 Attempting to load from Contentful...');
+      console.log('Attempting to load from Contentful...');
       const contentfulConfig = await loadFromContentful(slug);
       if (contentfulConfig) {
-        console.log('✅ Loaded layout config from Contentful:', contentfulConfig);
+        console.log('Loaded layout config from Contentful:', contentfulConfig);
         return contentfulConfig;
       }
     }
     
-    // Method 2: Try to load from localStorage (Demo/Development)
     if (typeof window !== 'undefined') {
-      console.log('💾 Attempting to load from localStorage...');
+      console.log('Attempting to load from localStorage...');
       const localConfig = loadFromLocalStorage();
       if (localConfig) {
-        console.log('✅ Loaded layout config from localStorage:', localConfig);
+        console.log('Loaded layout config from localStorage:', localConfig);
         return localConfig;
       }
     }
     
-    // Method 3: Return default configuration
-    console.log('🎯 Using default layout configuration');
+    console.log('Using default layout configuration');
     return getDefaultLayoutConfig();
     
   } catch (error) {
-    console.error('❌ Error loading layout configuration:', error);
+    console.error('Error loading layout configuration:', error);
     return getDefaultLayoutConfig();
   }
 }
 
-// 📡 CONTENTFUL LOADING (Production)
 async function loadFromContentful(slug: string): Promise<LayoutConfig | null> {
   try {
     const { contentfulClient, LANDING_PAGE_QUERY } = await import('./contentful');
     
     if (!contentfulClient) {
-      console.log('⚠️ Contentful client not configured');
+      console.log('Contentful client not configured');
       return null;
     }
     
-    const data = await contentfulClient.request(LANDING_PAGE_QUERY, { slug });
+    const data = await contentfulClient.request<LandingPageData>(LANDING_PAGE_QUERY, { slug });
     const page = data.landingPageCollection.items[0];
     
     if (page && page.layoutConfig) {
-      // Parse the JSON configuration stored in Contentful
       const config = JSON.parse(page.layoutConfig);
-      console.log('📄 Parsed Contentful layout config:', config);
+      console.log('Parsed Contentful layout config:', config);
       return config;
     }
     
-    console.log('📭 No layout config found in Contentful for slug:', slug);
+    console.log('No layout config found in Contentful for slug:', slug);
     return null;
   } catch (error) {
-    console.error('❌ Error loading from Contentful:', error);
+    console.error('Error loading from Contentful:', error);
     return null;
   }
 }
 
-// 💾 LOCALSTORAGE LOADING (Demo/Development)
 function loadFromLocalStorage(): LayoutConfig | null {
-  // Only run on client side
   if (typeof window === 'undefined') {
     return null;
   }
@@ -85,18 +85,17 @@ function loadFromLocalStorage(): LayoutConfig | null {
     const stored = localStorage.getItem('contentful-layout-config');
     if (stored) {
       const config = JSON.parse(stored);
-      console.log('📱 Parsed localStorage config:', config);
+      console.log('Parsed localStorage config:', config);
       return config;
     }
-    console.log('📭 No config found in localStorage');
+    console.log('No config found in localStorage');
     return null;
   } catch (error) {
-    console.error('❌ Error loading from localStorage:', error);
+    console.error('Error loading from localStorage:', error);
     return null;
   }
 }
 
-// 🎯 DEFAULT CONFIGURATION
 function getDefaultLayoutConfig(): LayoutConfig {
   return {
     components: [
@@ -190,7 +189,6 @@ function getDefaultLayoutConfig(): LayoutConfig {
   };
 }
 
-// 💾 CLIENT-SIDE SAVE FUNCTION
 export function saveLayoutConfigToLocalStorage(config: LayoutConfig): void {
   if (typeof window !== 'undefined') {
     try {
@@ -200,22 +198,19 @@ export function saveLayoutConfigToLocalStorage(config: LayoutConfig): void {
       };
       
       localStorage.setItem('contentful-layout-config', JSON.stringify(configWithTimestamp));
-      console.log('💾 Layout config saved to localStorage:', configWithTimestamp);
+      console.log('Layout config saved to localStorage:', configWithTimestamp);
       
-      // Also save a backup with timestamp
       const backupKey = `contentful-layout-backup-${Date.now()}`;
       localStorage.setItem(backupKey, JSON.stringify(configWithTimestamp));
       
-      // Clean up old backups (keep only last 5)
       cleanupOldBackups();
       
     } catch (error) {
-      console.error('❌ Error saving to localStorage:', error);
+      console.error('Error saving to localStorage:', error);
     }
   }
 }
 
-// 🧹 CLEANUP OLD BACKUPS
 function cleanupOldBackups(): void {
   if (typeof window === 'undefined') return;
   
@@ -223,20 +218,18 @@ function cleanupOldBackups(): void {
     const backupKeys = Object.keys(localStorage)
       .filter(key => key.startsWith('contentful-layout-backup-'))
       .sort()
-      .reverse(); // Most recent first
+      .reverse(); 
     
-    // Keep only the 5 most recent backups
     const keysToDelete = backupKeys.slice(5);
     keysToDelete.forEach(key => {
       localStorage.removeItem(key);
-      console.log('🗑️ Cleaned up old backup:', key);
+      console.log('Cleaned up old backup:', key);
     });
   } catch (error) {
-    console.error('❌ Error cleaning up backups:', error);
+    console.error('Error cleaning up backups:', error);
   }
 }
 
-// 📊 UTILITY FUNCTIONS
 export function getLayoutConfigStats(config: LayoutConfig | null) {
   if (!config) return null;
   

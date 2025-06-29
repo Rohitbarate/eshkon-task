@@ -1,31 +1,31 @@
-import { Middleware } from '@reduxjs/toolkit';
+import { Middleware, Dispatch, UnknownAction } from '@reduxjs/toolkit';
 import { RootState } from '../index';
 import { setSaving, setSaved } from '../slices/layoutSlice';
 
 let autosaveTimeout: NodeJS.Timeout | null = null;
 
-export const autosaveMiddleware: Middleware<{}, RootState> = (store) => (next) => (action) => {
+export const autosaveMiddleware: Middleware<Dispatch<UnknownAction>, RootState> = (store) => (next) => (action) => {
   const result = next(action);
-  
-  // Only autosave for layout changes
-  if (action.type.startsWith('layout/') && action.type !== 'layout/setSaving' && action.type !== 'layout/setSaved') {
+
+  if (
+   action && typeof action === 'object' && action !== null && 'type' in action && typeof (action as { type: unknown }).type === 'string' &&
+    (action as { type: string }).type.startsWith('layout/') &&
+    (action as { type: string }).type !== 'layout/setSaving' &&
+    (action as { type: string }).type !== 'layout/setSaved'
+  ) {
     const state = store.getState();
-    
+
     if (state.layout.isDirty && !state.layout.isSaving) {
-      // Clear existing timeout
       if (autosaveTimeout) {
         clearTimeout(autosaveTimeout);
       }
-      
-      // Set new timeout for autosave
+
       autosaveTimeout = setTimeout(async () => {
         store.dispatch(setSaving(true));
-        
+
         try {
-          // In a real app, this would save to Contentful
-          // For now, we'll just simulate the save
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
           console.log('Autosaved layout:', state.layout.components);
           store.dispatch(setSaved());
         } catch (error) {
@@ -33,9 +33,9 @@ export const autosaveMiddleware: Middleware<{}, RootState> = (store) => (next) =
         } finally {
           store.dispatch(setSaving(false));
         }
-      }, 2000); // 2 second delay
+      }, 2000);
     }
   }
-  
+
   return result;
 };

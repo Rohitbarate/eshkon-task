@@ -158,7 +158,7 @@ export async function loadLayoutConfig(slug: string) {
 ### Rendering Components:
 ```typescript
 // app/landing/[slug]/page.tsx
-const layoutConfig = await loadLayoutConfig(params.slug);
+const layoutConfig = await loadLayoutConfig(slug);
 
 return (
   <main>

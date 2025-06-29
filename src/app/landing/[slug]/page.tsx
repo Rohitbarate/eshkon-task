@@ -7,21 +7,30 @@ import Navigation from '../../../components/layout/Navigation';
 import HeroBlock from '../../../components/landing/HeroBlock';
 import TwoColumnBlock from '../../../components/landing/TwoColumnBlock';
 import ImageGridBlock from '../../../components/landing/ImageGridBlock';
+import type { Viewport } from 'next';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
+  }>;
+}
+
+export const viewport: Viewport = {
+  themeColor: 'black',
+};
+
+interface LandingPageQueryResponse {
+  landingPageCollection: {
+    items: LandingPage[];
   };
 }
 
 async function getLandingPage(slug: string): Promise<LandingPage | null> {
-  // Check if Contentful credentials are available
   const hasContentfulCredentials = 
     process.env.CONTENTFUL_SPACE_ID && 
     process.env.CONTENTFUL_ACCESS_TOKEN;
 
   if (!hasContentfulCredentials) {
-    // Return mock data when Contentful is not configured
     return {
       sys: { id: `mock-${slug}` },
       title: slug === 'page-1' ? 'Demo Landing Page 1' : 'Demo Landing Page 2',
@@ -37,12 +46,11 @@ async function getLandingPage(slug: string): Promise<LandingPage | null> {
   }
 
   try {
-    // Only import and use Contentful client if credentials are available
     const { contentfulClient, LANDING_PAGE_QUERY } = await import('../../../lib/contentful');
     if (!contentfulClient) {
       throw new Error('Contentful client is not initialized.');
     }
-    const data = await contentfulClient.request(LANDING_PAGE_QUERY, { slug });
+const data = await contentfulClient.request<LandingPageQueryResponse>(LANDING_PAGE_QUERY, { slug });
     return data?.landingPageCollection?.items[0] || null;
   } catch (error) {
     console.error('Error fetching landing page:', error);
@@ -63,15 +71,16 @@ async function getLandingPage(slug: string): Promise<LandingPage | null> {
 }
 
 export async function generateStaticParams() {
-  // For demo purposes, return the two pages we want to generate
   return [
     { slug: 'page-1' },
     { slug: 'page-2' },
   ];
 }
 
+// Fixed metadata generation - await params
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const page = await getLandingPage(params.slug);
+  const { slug } = await params; // Await params here
+  const page = await getLandingPage(slug);
   
   if (!page) {
     return {
@@ -90,16 +99,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-const LandingPageRoute: React.FC<PageProps> = async ({ params }) => {
-  const page = await getLandingPage(params.slug);
+const LandingPageRoute = async ({ params }: PageProps) => {
+  // Await params at the beginning
+  const { slug } = await params;
+  
+  const page = await getLandingPage(slug);
 
   if (!page) {
     notFound();
   }
 
-  // Load the layout configuration (this is where the JSON config is used!)
-  const layoutConfig = await loadLayoutConfig(params.slug);
-  
+  const layoutConfig = await loadLayoutConfig(slug);
+
   console.log('Rendering landing page with layout config:', layoutConfig);
 
   const renderComponent = (component: LayoutComponent) => {
@@ -116,13 +127,15 @@ const LandingPageRoute: React.FC<PageProps> = async ({ params }) => {
     }
   };
 
-  // Add JSON-LD structured data
+  const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL || 'http://localhost:3000';
+  
+  // Fixed: Use awaited slug
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
     name: page.title,
     description: `${page.title} - Built with our page builder`,
-    url: `${process.env.NEXT_PUBLIC_VERCEL_URL || 'http://localhost:3000'}/landing/${params.slug}`,
+    url: `${baseUrl}/landing/${slug}`,
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
@@ -130,13 +143,13 @@ const LandingPageRoute: React.FC<PageProps> = async ({ params }) => {
           '@type': 'ListItem',
           position: 1,
           name: 'Home',
-          item: process.env.NEXT_PUBLIC_VERCEL_URL || 'http://localhost:3000',
+          item: baseUrl,
         },
         {
           '@type': 'ListItem',
           position: 2,
           name: page.title,
-          item: `${process.env.NEXT_PUBLIC_VERCEL_URL || 'http://localhost:3000'}/landing/${params.slug}`,
+          item: `${baseUrl}/landing/${slug}`,
         },
       ],
     },
@@ -152,12 +165,10 @@ const LandingPageRoute: React.FC<PageProps> = async ({ params }) => {
       <Navigation />
       
       <main>
-        {/* This is where the magic happens - rendering components from JSON config */}
         {layoutConfig?.components
-          .sort((a, b) => a.order - b.order)
+          ?.sort((a, b) => a.order - b.order)
           .map(renderComponent)}
         
-        {/* Show a message if no components are configured */}
         {(!layoutConfig?.components || layoutConfig.components.length === 0) && (
           <div style={{
             padding: '4rem 2rem',

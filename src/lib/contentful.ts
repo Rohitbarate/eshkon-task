@@ -1,6 +1,5 @@
 import { GraphQLClient } from 'graphql-request';
 
-// Only create client if credentials are available
 const CONTENTFUL_SPACE_ID = process.env.CONTENTFUL_SPACE_ID;
 const CONTENTFUL_ACCESS_TOKEN = process.env.CONTENTFUL_ACCESS_TOKEN;
 
@@ -16,7 +15,6 @@ if (CONTENTFUL_SPACE_ID && CONTENTFUL_ACCESS_TOKEN) {
   });
 }
 
-// Export a safe client that throws descriptive errors if not configured
 export { contentfulClient };
 
 export const LANDING_PAGE_QUERY = `
@@ -109,7 +107,6 @@ export const ALL_LANDING_PAGES_QUERY = `
   }
 `;
 
-// Mutation to update layout configuration
 export const UPDATE_LAYOUT_CONFIG_MUTATION = `
   mutation UpdateLayoutConfig($id: String!, $layoutConfig: String!) {
     updateLandingPage(id: $id, data: { layoutConfig: $layoutConfig }) {

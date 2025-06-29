@@ -7,7 +7,7 @@ import { contentfulSaveMiddleware } from './middleware/contentfulSaveMiddleware'
 const persistConfig = {
   key: 'contentful-page-builder',
   storage,
-  whitelist: ['components', 'history', 'historyIndex'], // Only persist specific fields
+  whitelist: ['components', 'history', 'historyIndex'],
   version: 1,
 };
 

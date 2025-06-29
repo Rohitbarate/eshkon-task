@@ -15,7 +15,6 @@ interface DraggableProps {
 }
 
 export function Draggable({ id, children, sortable = false }: DraggableProps) {
-  // Use sortable for canvas items, draggable for palette items
   const sortableProps = useSortable({
     id,
     disabled: !sortable,
@@ -44,7 +43,7 @@ export function Draggable({ id, children, sortable = false }: DraggableProps) {
       style,
       ...attributes,
     },
-    dragHandleProps: listeners,
+    dragHandleProps: listeners??{},
   };
 
   const snapshot = {

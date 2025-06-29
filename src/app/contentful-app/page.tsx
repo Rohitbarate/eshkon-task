@@ -44,8 +44,7 @@ const ContentfulApp: React.FC = () => {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Load existing layout configuration from Contentful or localStorage
-        const layoutConfig = await loadLayoutConfig('page-1'); // Default to page-1 for demo
+        const layoutConfig = await loadLayoutConfig('page-1'); 
         
         if (layoutConfig && layoutConfig.components) {
           console.log('Loaded initial components:', layoutConfig.components);
