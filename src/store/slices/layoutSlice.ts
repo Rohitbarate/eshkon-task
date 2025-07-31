@@ -1,100 +1,101 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { LayoutComponent } from '../../types/contentful';
-import { LayoutState } from '../../types/redux';
+import { HeroData, ImageGridData, TwoColumnData } from "@/types/contentful";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-const initialState: LayoutState = {
-  components: [],
-  history: [[]],
-  historyIndex: 0,
-  isDirty: false,
-  isSaving: false,
-  lastSaved: null,
+export type BlockType = "hero" | "twoColumn" | "imageGrid";
+
+export interface Block {
+  id: string;
+  type: BlockType;
+  contentId?: string;
+  order: number;
+  data: HeroData | TwoColumnData | ImageGridData;
+}
+
+export interface LayoutConfig {
+  blocks: Block[];
+  history?: LayoutConfig[];
+  future?: LayoutConfig[];
+  isSaved: boolean;
+}
+
+const initialState: LayoutConfig = {
+  blocks: [],
+  history: [],
+  future: [],
+  isSaved: true,
 };
 
+function snapshotState(state: LayoutConfig): LayoutConfig {
+  return {
+    blocks: [...state.blocks],
+    isSaved: state.isSaved,
+  };
+}
+
 const layoutSlice = createSlice({
-  name: 'layout',
+  name: "layout",
   initialState,
   reducers: {
-    setComponents: (state, action: PayloadAction<LayoutComponent[]>) => {
-      state.components = action.payload;
-      state.history = [action.payload];
-      state.historyIndex = 0;
-      state.isDirty = false;
+    setBlocks(state, action: PayloadAction<Block[]>) {
+      state.blocks = action.payload;
     },
-    reorderComponents: (state, action: PayloadAction<{ sourceIndex: number; destinationIndex: number }>) => {
-      const { sourceIndex, destinationIndex } = action.payload;
-      const newComponents = Array.from(state.components);
-      const [reorderedItem] = newComponents.splice(sourceIndex, 1);
-      newComponents.splice(destinationIndex, 0, reorderedItem);
-      
-      // Update order values
-      newComponents.forEach((component, index) => {
-        component.order = index;
-      });
-
-      state.components = newComponents;
-      state.history = state.history.slice(0, state.historyIndex + 1);
-      state.history.push([...newComponents]);
-      state.historyIndex = state.history.length - 1;
-      state.isDirty = true;
-
-      // Limit history to 50 entries
-      if (state.history.length > 50) {
-        state.history = state.history.slice(-50);
-        state.historyIndex = state.history.length - 1;
+    addBlock(state, action: PayloadAction<Block>) {
+      if (state.blocks.length > 0) {
+        state.history?.push(snapshotState(state));
+      } else {
+        state.history?.push({
+          blocks: [],
+          isSaved: true,
+        });
+      }
+      state.blocks.push(action.payload);
+      state.future = [];
+      state.isSaved = false;
+    },
+    moveBlock(state, action: PayloadAction<{ from: number; to: number }>) {
+      const { from, to } = action.payload;
+      const updated = [...state.blocks];
+      const [moved] = updated.splice(from, 1);
+      updated.splice(to, 0, moved);
+      state.history?.push(snapshotState(state));
+      state.blocks = updated;
+      state.future = [];
+      state.isSaved = false;
+    },
+    undo(state) {
+      const prev = state.history?.pop();
+      if (prev) {
+        state.future?.push(snapshotState(state));
+        state.blocks = prev.blocks;
+        state.isSaved = false;
       }
     },
-    addComponent: (state, action: PayloadAction<LayoutComponent>) => {
-      const newComponent = { ...action.payload, order: state.components.length };
-      state.components.push(newComponent);
-      state.history = state.history.slice(0, state.historyIndex + 1);
-      state.history.push([...state.components]);
-      state.historyIndex = state.history.length - 1;
-      state.isDirty = true;
-    },
-    removeComponent: (state, action: PayloadAction<string>) => {
-      state.components = state.components.filter(c => c.id !== action.payload);
-      state.components.forEach((component, index) => {
-        component.order = index;
-      });
-      state.history = state.history.slice(0, state.historyIndex + 1);
-      state.history.push([...state.components]);
-      state.historyIndex = state.history.length - 1;
-      state.isDirty = true;
-    },
-    undo: (state) => {
-      if (state.historyIndex > 0) {
-        state.historyIndex -= 1;
-        state.components = [...state.history[state.historyIndex]];
-        state.isDirty = true;
+    redo(state) {
+      const next = state.future?.pop();
+      if (next) {
+        state.history?.push(snapshotState(state));
+        state.blocks = next.blocks;
+        state.isSaved = false;
       }
     },
-    redo: (state) => {
-      if (state.historyIndex < state.history.length - 1) {
-        state.historyIndex += 1;
-        state.components = [...state.history[state.historyIndex]];
-        state.isDirty = true;
-      }
+    clearHistory(state) {
+      state.history = [];
+      state.future = [];
     },
-    setSaving: (state, action: PayloadAction<boolean>) => {
-      state.isSaving = action.payload;
-    },
-    setSaved: (state) => {
-      state.isDirty = false;
-      state.lastSaved = new Date().toISOString();
+    markAsSaved(state) {
+      state.isSaved = true;
     },
   },
 });
 
 export const {
-  setComponents,
-  reorderComponents,
-  addComponent,
-  removeComponent,
+  setBlocks,
+  addBlock,
+  moveBlock,
   undo,
   redo,
-  setSaving,
-  setSaved,
+  clearHistory,
+  markAsSaved,
 } = layoutSlice.actions;
 
-export default layoutSlice.reducer;
+export const layoutReducer = layoutSlice.reducer;
