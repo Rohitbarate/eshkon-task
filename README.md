@@ -63,7 +63,7 @@ The page builder saves the layout configuration as JSON in Contentful:
 1. **Clone and install dependencies:**
 
 ```bash
-git clone (https://github.com/Rohitbarate/eshkon-task.git)
+git clone https://github.com/Rohitbarate/eshkon-task.git
 cd contentful-page-builder
 npm install
 ```
