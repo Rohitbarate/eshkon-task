@@ -1,34 +1,57 @@
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-import { useAppSelector } from '../../hooks/useAppSelector';
-import { useAppDispatch } from '../../hooks/useAppDispatch';
-import { reorderComponents, addComponent, undo, redo, setComponents } from '../../store/slices/layoutSlice';
-import { LayoutComponent } from '../../types/contentful';
-import ComponentPreview from './ComponentPreview';
-import ComponentPalette from './ComponentPalette';
-import { Droppable } from '../Droppable';
-import { Draggable } from '../Draggable';
-import styles from './PageBuilder.module.css';
-import type { HeroData, TwoColumnData, ImageGridData } from '../../types/contentful';
+import React, { useEffect } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { useAppSelector } from "../../hooks/useAppSelector";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import {
+  moveBlock,
+  addBlock,
+  undo,
+  redo,
+  setBlocks,
+  markAsSaved,
+} from "../../store/slices/layoutSlice";
+import { LayoutComponent } from "../../types/contentful";
+import ComponentPreview from "./ComponentPreview";
+import ComponentPalette from "./ComponentPalette";
+import { Droppable } from "../Droppable";
+import { Draggable } from "../Draggable";
+import styles from "./PageBuilder.module.css";
+import type {
+  HeroData,
+  TwoColumnData,
+  ImageGridData,
+} from "../../types/contentful";
 
 type ComponentData = HeroData | TwoColumnData | ImageGridData;
 interface PageBuilderProps {
   initialComponents?: LayoutComponent[];
 }
 
-const PageBuilder: React.FC<PageBuilderProps> = ({ initialComponents = [] }) => {
+const PageBuilder: React.FC<PageBuilderProps> = ({
+  initialComponents = [],
+}) => {
   const dispatch = useAppDispatch();
-  const { components, historyIndex, history, isDirty, isSaving, lastSaved } = useAppSelector(
+  const { blocks, history, future, isSaved } = useAppSelector(
     (state) => state.layout
   );
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
   useEffect(() => {
     if (initialComponents.length > 0) {
-      dispatch(setComponents(initialComponents));
+      dispatch(setBlocks(initialComponents));
     }
   }, [initialComponents, dispatch]);
 
@@ -46,119 +69,131 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialComponents = [] }) => 
     const overId = over.id as string;
 
     // Check if dragging from palette to canvas
-    if (['hero', 'twoColumn', 'imageGrid'].includes(activeId) && overId === 'canvas') {
-      const componentType = activeId as 'hero' | 'twoColumn' | 'imageGrid';
+    if (
+      ["hero", "twoColumn", "imageGrid"].includes(activeId) &&
+      overId === "canvas"
+    ) {
+      const componentType = activeId as "hero" | "twoColumn" | "imageGrid";
       const newComponent: LayoutComponent = {
         id: `${componentType}-${Date.now()}`,
         type: componentType,
-        order: components.length,
+        order: blocks.length,
         data: getDefaultComponentData(componentType),
       };
-      
-      dispatch(addComponent(newComponent));
-    }
-    else if (components.find(c => c.id === activeId) && components.find(c => c.id === overId)) {
-      const activeIndex = components.findIndex(c => c.id === activeId);
-      const overIndex = components.findIndex(c => c.id === overId);
-      
+
+      dispatch(addBlock(newComponent));
+    } else if (
+      blocks.find((c) => c.id === activeId) &&
+      blocks.find((c) => c.id === overId)
+    ) {
+      const activeIndex = blocks.findIndex((c) => c.id === activeId);
+      const overIndex = blocks.findIndex((c) => c.id === overId);
+
       if (activeIndex !== overIndex && activeIndex !== -1 && overIndex !== -1) {
-        dispatch(reorderComponents({
-          sourceIndex: activeIndex,
-          destinationIndex: overIndex,
-        }));
+        dispatch(
+          moveBlock({
+            from: activeIndex,
+            to: overIndex,
+          })
+        );
       }
     }
   };
 
- const getDefaultComponentData = (type: 'hero' | 'twoColumn' | 'imageGrid'): ComponentData => {
-  switch (type) {
-    case 'hero':
-      return {
-        heading: 'Hero Heading',
-        subtitle: 'Hero subtitle text goes here',
-        ctaText: 'Get Started',
-        ctaUrl: '#',
-        backgroundImage: {
-          sys: { id: 'placeholder' },
-          title: 'Placeholder Image',
-          url: 'https://images.pexels.com/photos/1591056/pexels-photo-1591056.jpeg?auto=compress&cs=tinysrgb&w=1200',
-          width: 1200,
-          height: 600,
-          contentType: 'image/jpeg',
-        },
-      };
-    case 'twoColumn':
-      return {
-        leftHeading: 'Two Column Heading',
-        leftSubtitle: 'Description text for the left column',
-        leftCtaText: 'Learn More',
-        leftCtaUrl: '#',
-        rightImage: {
-          sys: { id: 'placeholder' },
-          title: 'Placeholder Image',
-          url: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=800',
-          width: 800,
-          height: 600,
-          contentType: 'image/jpeg',
-        },
-      };
-    case 'imageGrid':
-      return {
-        images: [
-          {
-            sys: { id: 'placeholder-1' },
-            title: 'Grid Image 1',
-            url: 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=400',
-            width: 400,
-            height: 400,
-            contentType: 'image/jpeg',
+  const getDefaultComponentData = (
+    type: "hero" | "twoColumn" | "imageGrid"
+  ): ComponentData => {
+    switch (type) {
+      case "hero":
+        return {
+          heading: "Hero Heading",
+          subtitle: "Hero subtitle text goes here",
+          ctaText: "Get Started",
+          ctaUrl: "#",
+          backgroundImage: {
+            sys: { id: "placeholder" },
+            title: "Placeholder Image",
+            url: "https://images.pexels.com/photos/1591056/pexels-photo-1591056.jpeg?auto=compress&cs=tinysrgb&w=1200",
+            width: 1200,
+            height: 600,
+            contentType: "image/jpeg",
           },
-          {
-            sys: { id: 'placeholder-2' },
-            title: 'Grid Image 2',
-            url: 'https://images.pexels.com/photos/3184317/pexels-photo-3184317.jpeg?auto=compress&cs=tinysrgb&w=400',
-            width: 400,
-            height: 400,
-            contentType: 'image/jpeg',
+        };
+      case "twoColumn":
+        return {
+          leftHeading: "Two Column Heading",
+          leftSubtitle: "Description text for the left column",
+          leftCtaText: "Learn More",
+          leftCtaUrl: "#",
+          rightImage: {
+            sys: { id: "placeholder" },
+            title: "Placeholder Image",
+            url: "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=800",
+            width: 800,
+            height: 600,
+            contentType: "image/jpeg",
           },
-          {
-            sys: { id: 'placeholder-3' },
-            title: 'Grid Image 3',
-            url: 'https://images.pexels.com/photos/3184321/pexels-photo-3184321.jpeg?auto=compress&cs=tinysrgb&w=400',
-            width: 400,
-            height: 400,
-            contentType: 'image/jpeg',
-          },
-          {
-            sys: { id: 'placeholder-4' },
-            title: 'Grid Image 4',
-            url: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400',
-            width: 400,
-            height: 400,
-            contentType: 'image/jpeg',
-          },
-        ],
-      };
-    default:
-      // this line prevents returning `{}` which is invalid
-      throw new Error(`Unsupported component type: ${type}`);
-  }
-};
-
-  const canUndo = historyIndex > 0;
-  const canRedo = historyIndex < history.length - 1;
-
-  const getSaveStatus = () => {
-    if (isSaving) return { text: 'Saving...', className: styles.savingIndicator };
-    if (isDirty) return { text: 'Unsaved changes', className: styles.unsavedIndicator };
-    if (lastSaved) return { 
-      text: `Saved ${new Date(lastSaved).toLocaleTimeString()}`, 
-      className: styles.savedIndicator 
-    };
-    return null;
+        };
+      case "imageGrid":
+        return {
+          images: [
+            {
+              sys: { id: "placeholder-1" },
+              title: "Grid Image 1",
+              url: "https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=400",
+              width: 400,
+              height: 400,
+              contentType: "image/jpeg",
+            },
+            {
+              sys: { id: "placeholder-2" },
+              title: "Grid Image 2",
+              url: "https://images.pexels.com/photos/3184317/pexels-photo-3184317.jpeg?auto=compress&cs=tinysrgb&w=400",
+              width: 400,
+              height: 400,
+              contentType: "image/jpeg",
+            },
+            {
+              sys: { id: "placeholder-3" },
+              title: "Grid Image 3",
+              url: "https://images.pexels.com/photos/3184321/pexels-photo-3184321.jpeg?auto=compress&cs=tinysrgb&w=400",
+              width: 400,
+              height: 400,
+              contentType: "image/jpeg",
+            },
+            {
+              sys: { id: "placeholder-4" },
+              title: "Grid Image 4",
+              url: "https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400",
+              width: 400,
+              height: 400,
+              contentType: "image/jpeg",
+            },
+          ],
+        };
+      default:
+        // this line prevents returning `{}` which is invalid
+        throw new Error(`Unsupported component type: ${type}`);
+    }
   };
 
-  const saveStatus = getSaveStatus();
+  const canUndo = history && history?.length > 0;
+  const canRedo = future && future?.length > 0;
+
+  // const getSaveStatus = () => {
+  //   if (isSaving)
+  //     return { text: "Saving...", className: styles.savingIndicator };
+  //   if (isDirty)
+  //     return { text: "Unsaved changes", className: styles.unsavedIndicator };
+  //   if (lastSaved)
+  //     return {
+  //       text: `Saved ${new Date(lastSaved).toLocaleTimeString()}`,
+  //       className: styles.savedIndicator,
+  //     };
+  //   return null;
+  // };
+
+  // const saveStatus = getSaveStatus();
 
   return (
     <div className={styles.pageBuilder}>
@@ -180,24 +215,30 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialComponents = [] }) => 
           >
             ↷ Redo
           </button>
+          <button
+            onClick={() => dispatch(markAsSaved())}
+            disabled={isSaved}
+            className={styles.toolbarButton}
+            title="save"
+          >
+            save changes
+          </button>
         </div>
-        <div className={styles.toolbarRight}>
+        {/* <div className={styles.toolbarRight}>
           {saveStatus && (
-            <span className={saveStatus.className}>
-              {saveStatus.text}
-            </span>
+            <span className={saveStatus.className}>{saveStatus.text}</span>
           )}
-        </div>
+        </div> */}
       </div>
 
-      <DndContext 
+      <DndContext
         collisionDetection={closestCenter}
-        onDragStart={handleDragStart} 
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <div className={styles.builderContent}>
-          <div className={styles.palette}>
-            <h3 className={styles.paletteTitle}>Components</h3>
+          <div className={styles.palette} style={{ width: "100%" }}>
+            <h3 className={styles.paletteTitle}>Available Blocks</h3>
             <ComponentPalette />
           </div>
 
@@ -209,24 +250,34 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialComponents = [] }) => 
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                   className={`${styles.canvasArea} ${
-                    snapshot.isDraggingOver ? styles.canvasAreaDragging : ''
+                    snapshot.isDraggingOver ? styles.canvasAreaDragging : ""
                   }`}
                 >
-                  {components.length === 0 && (
+                  {blocks.length === 0 && (
                     <div className={styles.emptyCanvas}>
-                      <p>Drag components from the palette to build your page</p>
+                      <p>Drag blocks from the palette to build your page</p>
                     </div>
                   )}
-                  <SortableContext items={components.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                    {components.map((component, index) => (
-                      <Draggable key={component.id} id={component.id} index={index} sortable={true}>
+                  <SortableContext
+                    items={blocks.map((c) => c.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {blocks.map((component, index) => (
+                      <Draggable
+                        key={component.id}
+                        id={component.id}
+                        index={index}
+                        sortable={true}
+                      >
                         {(provided, snapshot) => (
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                             className={`${styles.componentItem} ${
-                              snapshot.isDragging ? styles.componentItemDragging : ''
+                              snapshot.isDragging
+                                ? styles.componentItemDragging
+                                : ""
                             }`}
                           >
                             <ComponentPreview component={component} />
@@ -245,10 +296,9 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ initialComponents = [] }) => 
         <DragOverlay>
           {activeId ? (
             <div className={styles.dragOverlay}>
-              {['hero', 'twoColumn', 'imageGrid'].includes(activeId) 
+              {["hero", "twoColumn", "imageGrid"].includes(activeId)
                 ? `Adding ${activeId} component`
-                : `Moving component`
-              }
+                : `Moving component`}
             </div>
           ) : null}
         </DragOverlay>

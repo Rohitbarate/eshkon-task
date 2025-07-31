@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { LayoutComponent } from '../../types/contentful';
-import { useAppDispatch } from '../../hooks/useAppDispatch';
-import { removeComponent } from '../../store/slices/layoutSlice';
-import styles from './ComponentPreview.module.css';
+import React from "react";
+import { LayoutComponent } from "../../types/contentful";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+// import { removeComponent } from "../../store/slices/layoutSlice";
+import styles from "./ComponentPreview.module.css";
 
 interface ComponentPreviewProps {
   component: LayoutComponent;
@@ -13,43 +13,49 @@ interface ComponentPreviewProps {
 const ComponentPreview: React.FC<ComponentPreviewProps> = ({ component }) => {
   const dispatch = useAppDispatch();
 
-  const handleRemove = () => {
-    dispatch(removeComponent(component.id));
-  };
-
   const renderPreview = () => {
     switch (component.type) {
-      case 'hero':
+      case "hero":
         const heroData = component.data as any;
         return (
           <div className={styles.heroPreview}>
             <div className={styles.heroContent}>
               <h3>{heroData.heading}</h3>
               <p>{heroData.subtitle}</p>
-              <button className={styles.previewButton}>{heroData.ctaText}</button>
+              <button className={styles.previewButton}>
+                {heroData.ctaText}
+              </button>
             </div>
             <div className={styles.heroImage}>
-              <img src={heroData.backgroundImage.url} alt={heroData.backgroundImage.title} />
+              <img
+                src={heroData.backgroundImage.url}
+                alt={heroData.backgroundImage.title}
+              />
             </div>
           </div>
         );
 
-      case 'twoColumn':
+      case "twoColumn":
         const twoColData = component.data as any;
         return (
           <div className={styles.twoColumnPreview}>
             <div className={styles.twoColumnLeft}>
               <h4>{twoColData.leftHeading}</h4>
               <p>{twoColData.leftSubtitle}</p>
-              <button className={styles.previewButton}>{twoColData.leftCtaText}</button>
+              <button className={styles.previewButton}>
+                {twoColData.leftCtaText}
+              </button>
             </div>
             <div className={styles.twoColumnRight}>
-              <img src={twoColData.rightImage.url} alt={twoColData.rightImage.title} />
+              <img
+                src={twoColData.rightImage.url}
+                alt={twoColData.rightImage.title}
+              />
             </div>
           </div>
         );
 
-      case 'imageGrid':
+      case "imageGrid":
         const gridData = component.data as any;
         return (
           <div className={styles.imageGridPreview}>
@@ -62,7 +68,9 @@ const ComponentPreview: React.FC<ComponentPreviewProps> = ({ component }) => {
         );
 
       default:
-        return <div className={styles.unknownPreview}>Unknown component type</div>;
+        return (
+          <div className={styles.unknownPreview}>Unknown component type</div>
+        );
     }
   };
 
@@ -70,17 +78,8 @@ const ComponentPreview: React.FC<ComponentPreviewProps> = ({ component }) => {
     <div className={styles.componentPreview}>
       <div className={styles.previewHeader}>
         <span className={styles.componentType}>{component.type}</span>
-        <button
-          onClick={handleRemove}
-          className={styles.removeButton}
-          title="Remove component"
-        >
-          ×
-        </button>
       </div>
-      <div className={styles.previewContent}>
-        {renderPreview()}
-      </div>
+      <div className={styles.previewContent}>{renderPreview()}</div>
     </div>
   );
 };
